@@ -1952,7 +1952,7 @@
 							<input id="wlan_active" onclick="wlan_active();" type="checkbox" checked/><i class="helper"></i>WLAN aktivieren
 						  </label>
 						</div>
-						<hr />
+						<hr id="hr_wifi" style="display:none"/>
 						<table id="networkconnect" class="wlantable" width="100%">
 							<!--Netzwerkliste -->
 						</table> 
@@ -2219,7 +2219,37 @@
 							<div class="form-group">
 							  <input type="text" id="apname" maxlength="13" required="required"/>
 							  <label class="control-label" for="input">AP-Name</label><i class="bar"></i>
-							</div>										
+							</div>
+							<div class="form-group">
+							  <select id="timezone">
+								<option value="-12">MEZ-12</option>
+								<option value="-11">MEZ-11</option>
+								<option value="-10">MEZ-10</option>
+								<option value="-9">MEZ-9</option>
+								<option value="-8">MEZ-8</option>
+								<option value="-7">MEZ-7</option>
+								<option value="-6">MEZ-6</option>
+								<option value="-5">MEZ-5</option>
+								<option value="-4">MEZ-4</option>
+								<option value="-3">MEZ-3</option>
+								<option value="-2">MEZ-2</option>
+								<option value="-1">MEZ-1</option>
+								<option value="0">MEZ</option>
+								<option value="1">MEZ+1</option>
+								<option value="2">MEZ+2</option>
+								<option value="3">MEZ+3</option>
+								<option value="4">MEZ+4</option>
+								<option value="5">MEZ+5</option>
+								<option value="6">MEZ+6</option>
+								<option value="7">MEZ+7</option>
+								<option value="8">MEZ+8</option>
+								<option value="9">MEZ+9</option>
+								<option value="10">MEZ+10</option>
+								<option value="11">MEZ+11</option>
+								<option value="12">MEZ+12</option>
+							  </select>
+							  <label class="control-label" for="select">Zeitzone</label><i class="bar"></i>
+							</div>											
 							<div class="form-group">
 							  <select id="language">
 								<option value="de">Deutsch</option>
@@ -2535,8 +2565,8 @@
                 if(response == 'true'){      
                    self.location.href='about:blank'
                 }
-			}
-        });
+			});
+        }
 	}
 	
 	function showPlot(){
@@ -2772,6 +2802,7 @@
 		showLoader('true');
 		loadJSON('settings', '', '3000', function (response) {
 			jr = JSON.parse(response);
+			byId('timezone').value = jr.system.utc;
 			byId('language').value = jr.system.language;
 			byId('hostname').value = jr.system.host;
 			byId('apname').value = jr.system.ap;
@@ -2797,6 +2828,7 @@
 			jr.system.host = byId('hostname').value.replace(/ /g, '_');
 			jr.system.ap = byId('apname').value.replace(/ /g, '_');
 			jr.system.hwversion = byId('hwversion').value;
+			jr.system.utc = byId('timezone').value;
 			jr.system.language = byId('language').value;
 			jr.system.unit = byId('unit').value;
 			jr.system.hwalarm = byId('hwalarm').checked;
@@ -3188,12 +3220,15 @@
 			var table_networklist = byId('networklist');
 			var table_networkconnect = byId('networkconnect');
 			if (jr.Connect){			
+				byId('hr_wifi').style.display = "";
 				var row = table_networkconnect.insertRow(0);
 				addCell(row,getIcon('ok'),'row-Check','0');
 				addCell(row,jr.SSID,'row-SSID','1');
 				addCell(row,getRSSIIcon(jr.RSSI),'row-RSSI','2');
 				addCell(row,getWifiSecureIcon(jr.Enc),'row-Enc','3');
-				addCell(row,'','row-link','4');								
+				addCell(row,'','row-link','4');
+			}else{
+				byId('hr_wifi').style.display = "none";
 			}
 			NetworkconnectRowClick();
 			for (var i = 0; i < jr.Scan.length; i++) {
