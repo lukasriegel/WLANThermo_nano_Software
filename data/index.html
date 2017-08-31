@@ -1740,6 +1740,27 @@
 			top:0.625rem;
 			right:0.25rem;
 		}
+		.table_nav tr td{
+			width:50%;
+			padding-top:0.375rem;
+			padding-bottom:0.375rem;
+			color:#0078e7;
+			<!-- background-color:#4a4a4a; -->
+			text-align:center;
+			font-size: 1.2em;
+			border-bottom:4px solid #2f2f2f
+		}
+		.table_nav tr td:first-child { 
+			text-align:left;
+			padding-left:0.5rem;			
+		}
+		.table_nav tr td:last-child { 
+			text-align:right;
+			padding-right:0.5rem;			
+		}
+		.table_nav tr td span{
+			cursor: pointer;
+		}		
     </style>
 </head>
 <body>
@@ -1753,7 +1774,7 @@
 		</a>
 		<div id="thermoname">N.C.</div>
 		<div class="battery" onclick="setshowBatteryWlanIcon();">N.C.</div>
-		<div title="This is my tooltip" class="wifi" onclick="setshowBatteryWlanIcon();">N.C.</div>
+		<div class="wifi" onclick="setshowBatteryWlanIcon();">N.C.</div>
 		<div class="notification" style="display:none" onclick="update();"><span class="icon-notification"> </span></div>
 	</div>
 	<div class="clear"></div>
@@ -1939,14 +1960,22 @@
         </div>
 		<!-- ################################################### -->
 		<div id="wlan_config" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">WLAN</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex()"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">WLAN Einstellungen</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
-					<div class="1-box wlan_conf">						
+					<div class="1-box wlan_conf">	
+						<div class="checkbox">
+						  <label>
+							<input id="wlan_active" onclick="wlan_active();" type="checkbox" checked/><i class="helper"></i>WLAN aktivieren
+						  </label>
+						</div>
+						<hr id="hr_wifi" style="display:none"/>
 						<table id="networkconnect" class="wlantable" width="100%">
 							<!--Netzwerkliste -->
 						</table> 
@@ -1961,22 +1990,19 @@
 								<!--Netzwerkliste -->
 						</table>
 						<hr />
-						<div class="checkbox">
-						  <label>
-							<input id="wlan_active" onclick="wlan_active();" type="checkbox" checked/><i class="helper"></i>WLAN aktivieren
-						  </label>
-						</div>						
+						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungen löschen</p>
 					</div>
 				</div>
 			</div>
         </div>
 		<!-- ################################################### -->
 		<div id="wlan_set" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showWLAN()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">WLAN</button>
-				<button class="pure-button" onclick="setWLAN(document.getElementsByName('ssidInput')[0].value, document.getElementsByName('ssidPasswordInput')[0].value)">Verbinden</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showWLAN()"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setWLAN(document.getElementsByName('ssidInput')[0].value, document.getElementsByName('ssidPasswordInput')[0].value)">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">Netzwerk Verbinden</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
@@ -1997,11 +2023,12 @@
         </div>
 		<!-- ################################################### -->
 		<div id="pitmaster_settings" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">Pitmaster</button>
-				<button class="pure-button" onclick="setPitmaster();">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex()"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setPitmaster();">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">Pitmaster Einstellungen</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
@@ -2048,11 +2075,12 @@
 		</div>	
 		
 		<div id="pitmaster_profile" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="backPidProfile();">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">Profile</button>
-				<button class="pure-button" onclick="setPitmasterProfile();">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="backPidProfile();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setPitmasterProfile();">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>	
 			<div id="aktorik_settings_show">
 				<h3 class="headtitle">Aktorik</h3>
 				<div class="pure-g">
@@ -2148,11 +2176,12 @@
         </div>
 		<!-- ################################################### -->
 		<div id="channel_settings" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">Kanal</button>
-				<button id="channel_settings_save" class="pure-button" onclick="">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex()"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span id="channel_settings_save">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>			
 			<h3 id="channel_settings_headtitle" class="headtitle">N.C.</h3>
             <div class="pure-g">
 				<div class="pure-u-1-1 pure-u-md-1-1 pure-u-lg-1-1">
@@ -2200,11 +2229,12 @@
 		<!-- ################################################### -->
 		<div id="system_config" class="content" style="display:none">
 			<!-- html for about-Site -->
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">System</button>
-				<button class="pure-button" onclick="setSystem()">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setsystem();">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">System Einstellungen</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-md-1-1 pure-u-lg-1-1">
@@ -2244,11 +2274,12 @@
         </div>
 		<!-- ################################################### -->
 		<div id="thingspeak" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">IoT</button>
-				<button class="pure-button" onclick="setThingspeak()">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setThingspeak();">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">Nano Cloud</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
@@ -2390,11 +2421,12 @@
 		<!-- ################################################### -->
 		<div id="push_notification" class="content" style="display:none">
 			<!-- html for thingspeak-Site -->
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-				<button class="pure-button pure-button-disabled">Notification</button>
-				<button class="pure-button" onclick="setPushNotification();">Speichern</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="setPushNotification();">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">Telegram</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
@@ -2423,9 +2455,12 @@
         </div>
 		<!-- ################################################### -->
 		<div id="about" class="content" style="display:none">
-			<div class="pure-button-group footer_buttons" role="group">
-				<button class="pure-button" onclick="showIndex()">&#171;&nbsp;Back</button>
-			</div>
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td></td>
+				</tr>
+			</table>
 			<h3 class="headtitle">WlanThermo Team</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1  pure-u-md-1-1 pure-u-lg-1-1">
@@ -2524,6 +2559,17 @@
 				byId('wlan_active').checked = true;
 			}
 		}
+	}
+	
+	function clearWifi(){
+		txt = 'Sollen wirklich alle Netzwerkverbindungen gelöscht werden?';
+		if (confirm(txt) == true) {
+			loadJSON('clearwifi', '', '60000', function (response) {
+                if(response == 'true'){      
+                   self.location.href='about:blank'
+                }
+			});
+        }
 	}
 	
 	function showPlot(){
@@ -3175,12 +3221,15 @@
 			var table_networklist = byId('networklist');
 			var table_networkconnect = byId('networkconnect');
 			if (jr.Connect){			
+				byId('hr_wifi').style.display = "";
 				var row = table_networkconnect.insertRow(0);
 				addCell(row,getIcon('ok'),'row-Check','0');
 				addCell(row,jr.SSID,'row-SSID','1');
 				addCell(row,getRSSIIcon(jr.RSSI),'row-RSSI','2');
 				addCell(row,getWifiSecureIcon(jr.Enc),'row-Enc','3');
-				addCell(row,'','row-link','4');								
+				addCell(row,'','row-link','4');
+			}else{
+				byId('hr_wifi').style.display = "none";
 			}
 			NetworkconnectRowClick();
 			for (var i = 0; i < jr.Scan.length; i++) {
@@ -3248,7 +3297,7 @@
 				break;
 			case '4':
 				if(val){val = val.toString().match(/^-?\d+(?:\.\d{0,4})?/)[0];}
-				break;	
+				break;
 			default:
 				if(val){val = val.toString().match(/^-?\d+(?:\.\d{0,1})?/)[0];}
 		} 
