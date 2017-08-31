@@ -250,8 +250,6 @@ bool loadconfig(byte count) {
       else return false;
       if (json.containsKey("lang"))     sys.language = json["lang"].asString();
       else return false;
-      if (json.containsKey("utc"))      sys.timeZone = json["utc"];
-      else return false;
       if (json.containsKey("batmax"))   battery.max = json["batmax"];
       else return false;
       if (json.containsKey("batmin"))   battery.min = json["batmin"];
@@ -261,8 +259,6 @@ bool loadconfig(byte count) {
         if (sector > log_sector) log_sector = sector;
         // oberes limit wird spaeter abgefragt
       }
-      else return false;
-      if (json.containsKey("summer"))   sys.summer = json["summer"];
       else return false;
       if (json.containsKey("fast"))     sys.fastmode = json["fast"];
       else return false;
@@ -276,6 +272,8 @@ bool loadconfig(byte count) {
       else return false;
       if (json.containsKey("god"))      sys.god = json["god"];
       else return false;
+      if (json.containsKey("pitsup"))      sys.pitsupply = json["pitsup"];
+      //else return false;
       
     }
     break;
@@ -438,8 +436,6 @@ bool setconfig(byte count, const char* data[2]) {
       json["hwalarm"] =     sys.hwalarm;
       json["ap"] =          sys.apname;
       json["lang"] =        sys.language;
-      json["utc"] =         sys.timeZone;
-      json["summer"] =      sys.summer;
       json["fast"] =        sys.fastmode;
       json["hwversion"] =   sys.hwversion;
       json["update"] =      sys.update;
@@ -449,6 +445,7 @@ bool setconfig(byte count, const char* data[2]) {
       json["batmin"] =      battery.min;
       json["logsec"] =      log_sector;
       json["god"] =         sys.god;
+      json["pitsup"] =      sys.pitsupply;
     
       size_t size = json.measureLength() + 1;
       clearEE(EESYSTEM,EESYSTEMBEGIN);  // Bereich reinigen

@@ -225,7 +225,6 @@ String cloudData() {
   JsonObject& system = root.createNestedObject("system");
 
     system["time"] = String(now());
-    system["utc"] = sys.timeZone;
     system["soc"] = battery.percentage;
     system["charge"] = !battery.charge;
     system["rssi"] = rssi;
@@ -366,8 +365,13 @@ void server_setup() {
   });
 
   server.on("/pitsupply",[](AsyncWebServerRequest *request){
-    if (sys.hwversion == 2) digitalWrite(PITSUPPLY, HIGH);
-    request->send(200, "text/plain", "aktiviert");
+    if (sys.hwversion > 1 && !sys.pitsupply) {
+      sys.pitsupply = true;
+      request->send(200, "text/plain", "aktiviert");
+    } else {
+      sys.pitsupply = false;
+      request->send(200, "text/plain", "deaktiviert");
+    }
   });
    
   server.on("/startlog",[](AsyncWebServerRequest *request){
@@ -376,9 +380,11 @@ void server_setup() {
   });
 
   server.on("/newtoken",[](AsyncWebServerRequest *request){
+    ESP.wdtDisable(); 
     iot.CL_token = newToken();
     setconfig(eTHING,{});
     lastUpdateCloud = 0; // Daten senden forcieren
+    ESP.wdtEnable(10);
     request->send(200, "text/plain", iot.CL_token);
   });
   
