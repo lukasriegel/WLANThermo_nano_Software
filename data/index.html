@@ -2772,7 +2772,6 @@
 		showLoader('true');
 		loadJSON('settings', '', '3000', function (response) {
 			jr = JSON.parse(response);
-			byId('timezone').value = jr.system.utc;
 			byId('language').value = jr.system.language;
 			byId('hostname').value = jr.system.host;
 			byId('apname').value = jr.system.ap;
@@ -2798,7 +2797,6 @@
 			jr.system.host = byId('hostname').value.replace(/ /g, '_');
 			jr.system.ap = byId('apname').value.replace(/ /g, '_');
 			jr.system.hwversion = byId('hwversion').value;
-			jr.system.utc = byId('timezone').value;
 			jr.system.language = byId('language').value;
 			jr.system.unit = byId('unit').value;
 			jr.system.hwalarm = byId('hwalarm').checked;
