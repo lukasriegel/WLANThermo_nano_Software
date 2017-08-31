@@ -2562,7 +2562,7 @@
 	}
 	
 	function clearWifi(){
-		txt = 'Sollen wirklich alle Netzwerkverbindungen gelöscht werden?';
+		txt = 'Sollen wirklich alle Netzwerkverbindungsdaten gelöscht werden?';
 		if (confirm(txt) == true) {
 			loadJSON('clearwifi', '', '60000', function (response) {
                 if(response == 'true'){      
