@@ -610,7 +610,7 @@ void start_fs() {
   // PITMASTER
   if (!loadconfig(ePIT)) {
     serialNote(PIT_FILE,0);
-    set_pid();  // Default PID-Settings
+    set_pid(0);  // Default PID-Settings
     set_pitmaster(1);
     setconfig(ePIT,{});  // Reset pitmaster config
   } else serialNote(PIT_FILE,1);

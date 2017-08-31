@@ -106,6 +106,7 @@ class NanoWebHandler: public AsyncWebHandler {
     JsonArray& _aktor = root.createNestedArray("aktor");
     _aktor.add("SSR");
     _aktor.add("FAN");
+    _aktor.add("SERVO");
 
     JsonObject& _iot = root.createNestedObject("iot");
     _iot["TSwrite"] =   iot.TS_writeKey; 
@@ -419,7 +420,7 @@ public:
     setconfig(eSYSTEM,{});
     loadconfig(eSYSTEM);
     set_pitmaster(1);
-    set_pid();
+    set_pid(0);
     setconfig(ePIT,{});
     loadconfig(ePIT);
     set_iot(1);
@@ -471,6 +472,7 @@ public:
         request->send(200, "text/html", "<form method='POST' action='/clearwifi'>Wifi-Speicher wirklich leeren?<br><br><input type='submit' value='Ja'></form>");
       } else if (request->method() == HTTP_POST) {
         setconfig(eWIFI,{}); // clear Wifi settings
+        restartnow = true;
         request->send(200, "text/json", "true");
       } else request->send(500, "text/plain", BAD_PATH);
 
