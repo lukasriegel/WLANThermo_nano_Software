@@ -1946,7 +1946,13 @@
 			<h3 class="headtitle">WLAN Einstellungen</h3>
 			<div class="pure-g">
 				<div class="pure-u-1-1 pure-u-lg-1-1">
-					<div class="1-box wlan_conf">						
+					<div class="1-box wlan_conf">	
+						<div class="checkbox">
+						  <label>
+							<input id="wlan_active" onclick="wlan_active();" type="checkbox" checked/><i class="helper"></i>WLAN aktivieren
+						  </label>
+						</div>
+						<hr />
 						<table id="networkconnect" class="wlantable" width="100%">
 							<!--Netzwerkliste -->
 						</table> 
@@ -1961,11 +1967,7 @@
 								<!--Netzwerkliste -->
 						</table>
 						<hr />
-						<div class="checkbox">
-						  <label>
-							<input id="wlan_active" onclick="wlan_active();" type="checkbox" checked/><i class="helper"></i>WLAN aktivieren
-						  </label>
-						</div>						
+						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungen löschen</p>
 					</div>
 				</div>
 			</div>
@@ -2554,6 +2556,17 @@
 				byId('wlan_active').checked = true;
 			}
 		}
+	}
+	
+	function clearWifi(){
+		txt = 'Sollen wirklich alle Netzwerkverbindungen gelöscht werden?';
+		if (confirm(txt) == true) {
+			loadJSON('clearwifi', '', '60000', function (response) {
+                if(response == 'true'){      
+                   self.location.href='about:blank'
+                }
+			}
+        });
 	}
 	
 	function showPlot(){
