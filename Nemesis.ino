@@ -142,6 +142,12 @@ void loop() {
   // Standby oder Mess-Betrieb
   if (standby_control()) return;
 
+  if (restartnow) {
+    delay(100);
+    yield();
+    ESP.restart();
+  }
+
   // WiFi Monitoring
   wifimonitoring();
 

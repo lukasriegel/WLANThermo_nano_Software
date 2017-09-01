@@ -240,7 +240,7 @@ void controlAlarm(bool action){                // action dient zur Pulsung des S
           else if (ch[i].temp < ch[i].min) notification.limit = 0;
             
           // Sender frei? Falls fehlerhaftes Senden, wird der Client selbst wieder frei
-          if (iot.TS_httpKey != "") {
+          if (iot.TS_httpKey != "" && iot.TS_on) {
             if (sendNote(0)) sendNote(1);  // Notification per Thingspeak
             else sendM = false;       // kann noch nicht gesendet werden, also warten
           } else if (iot.TG_on > 0) {

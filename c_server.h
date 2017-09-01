@@ -379,6 +379,17 @@ void server_setup() {
     request->send(200, "text/plain", "true");
   });
 
+  server.on("/restart",[](AsyncWebServerRequest *request){
+    restartnow = true;
+    request->send(200, "text/plain", "Restart");
+  });
+
+  server.on("/servo",[](AsyncWebServerRequest *request){
+    set_pid(1);
+    setconfig(ePIT,{});
+    request->send(200, "text/plain", "Reset pitmaster config");
+  });
+
   server.on("/newtoken",[](AsyncWebServerRequest *request){
     ESP.wdtDisable(); 
     iot.CL_token = newToken();

@@ -50,7 +50,7 @@ extern "C" uint32_t _SPIFFS_end;        // FIRST ADRESS AFTER FS
 // SETTINGS
 
 // HARDWARE
-#define FIRMWAREVERSION "v0.8.0"
+#define FIRMWAREVERSION "v0.8.1"
 #define APIVERSION      "v1"
 
 // CHANNELS
@@ -249,7 +249,7 @@ AutoTune autotune;
 struct DutyCycle {
   long timer;
   int value;
-  bool dc;
+  bool dc;          // min or max
   byte aktor;
   bool on;
   int saved;
@@ -303,6 +303,7 @@ struct System {
 System sys;
 bool stby = false;                // USB POWER SUPPLY?            
 byte pulsalarm = 1;
+bool restartnow = false;
 
 // BATTERY
 struct Battery {
@@ -510,7 +511,7 @@ void startautotunePID(int maxCyc, bool store, int over, long tlimit);
 void pitmaster_control();
 void disableAllHeater();
 void set_pitmaster(bool init);
-void set_pid();
+void set_pid(byte index);
 void stopautotune();
 
 // BOT

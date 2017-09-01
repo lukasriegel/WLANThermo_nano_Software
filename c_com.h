@@ -64,14 +64,14 @@ void read_serial(char *buffer) {
     if (str == "help") {
       Serial.println();
       Serial.println(F("Syntax: \"command\":{\"Attribut\":\"Value\"]}"));
-      Serial.println(F("Possible commands without additional attributs"));
-      Serial.println(F("restart\t\t-> Restart ESP"));
-      Serial.println(F("data\t\t-> Read data.json"));
-      Serial.println(F("settings\t-> Read settings.json"));
-      Serial.println(F("networklist\t-> Get Networks"));
-      Serial.println(F("networkscan\t-> Start Network Scan"));
-      Serial.println(F("clearwifi\t-> Reset WIFI Settings"));
-      Serial.println(F("stopwifi\t-> Stop WIFI"));
+      //Serial.println(F("Possible commands without additional attributs"));
+      //Serial.println(F("restart\t\t-> Restart ESP"));
+      //Serial.println(F("data\t\t-> Read data.json"));
+      //Serial.println(F("settings\t-> Read settings.json"));
+      //Serial.println(F("networklist\t-> Get Networks"));
+      //Serial.println(F("networkscan\t-> Start Network Scan"));
+      //Serial.println(F("clearwifi\t-> Reset WIFI Settings"));
+      //Serial.println(F("stopwifi\t-> Stop WIFI"));
       Serial.println();
       return;
     }
@@ -144,7 +144,7 @@ void read_serial(char *buffer) {
 
     // Reset PITMASTER PID
     else if (str == "setPID") {
-      set_pid();  // Default PID-Settings
+      set_pid(0);  // Default PID-Settings
       if (setconfig(ePIT,{})) DPRINTPLN("[INFO]\tReset pitmaster config");
       return;
     }
@@ -192,18 +192,13 @@ void read_serial(char *buffer) {
       setconfig(eSYSTEM,{}); 
       return;
     }
-    
-    // Set Pitsupply
-    else if (str == "pitsupply") {
-      digitalWrite(PITSUPPLY, HIGH);
-      return;
-    }
 
     // Test pitmaster 2
     else if (str == "pit2") {
       digitalWrite(PITMASTER2, HIGH);
       return;
     }
+
   }
 
   DPRINTP("[INFO]\tYou entered: >");

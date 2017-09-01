@@ -72,13 +72,7 @@ void set_wifi() {
   if (WiFi.status() == WL_CONNECTED) {
         
     isAP = 0;
-
     WiFi.setAutoReconnect(true); //Automatisch neu verbinden falls getrennt
- 
-    udp.begin(2390);  // localPort = 2390;
-
-    DPRINTP("[INFO]\tStarting UDP: Local port ");
-    DPRINTLN(udp.localPort());
     
   }
   else {
