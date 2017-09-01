@@ -2273,6 +2273,26 @@
 			</div>
         </div>
 		<!-- ################################################### -->
+		<div id="extended_settings" class="content" style="display:none">
+			<!-- html for about-Site -->
+			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
+				<tr>
+				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
+				  <td><span onclick="">Speichern<span class="icon-arrow_right"></span></span></td>
+				</tr>
+			</table>
+			<h3 class="headtitle">Extended settings</h3>
+			<div class="pure-g">
+				<div class="pure-u-1-1 pure-u-md-1-1 pure-u-lg-1-1">
+					<div class="1-box channel_conf">
+						<form>							
+								
+						</form>
+					</div>
+				</div>
+			</div>
+        </div>
+		<!-- ################################################### -->
 		<div id="thingspeak" class="content" style="display:none">
 			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
 				<tr>
@@ -2470,7 +2490,7 @@
 							<tr><td>&#10032;&nbsp;Björn Schrader</td></tr>
 							<tr><td>&#10032;&nbsp;Alexander Schäfer</td></tr>
 							<tr><td>&#10032;&nbsp;Steffen Ochs</td></tr>
-							<tr><td>&#10032;&nbsp;Florian Riedl</td></tr>
+							<tr><td ondblclick="showExtendedSettings();">&#10032;&nbsp;Florian Riedl</td></tr>
 							<tr><td>&#10032;&nbsp;Maik Kaste</td></tr>
 						</table>
 					</div>
@@ -2496,7 +2516,6 @@
 			var classes = element.className.split(/\s+/),
 				length = classes.length,
 				i = 0;
-
 			for(; i < length; i++) {
 			  if (classes[i] === className) {
 				classes.splice(i, 1);
@@ -3031,7 +3050,7 @@
 	}	
 
 	function hideAll(){
-		hideIDs = ['index','wlan_config','system_config','system_config','about','wlan_set','thingspeak','push_notification','channel_settings','pitmaster_settings','pitmaster_profile'];
+		hideIDs = ['index','wlan_config','system_config','system_config','about','wlan_set','thingspeak','push_notification','channel_settings','pitmaster_settings','pitmaster_profile','extended_settings'];
 		for (var i = 0; i < hideIDs.length; i++) {
 			byId(hideIDs[i]).style.display = "none";
 		}
@@ -3303,6 +3322,11 @@
 		} 
 		if(val.split('.').length>2){val = val.replace(/\.+$/,"");}		
 		number.value = val;
+	}
+	
+	function showExtendedSettings(){
+		hideAll();
+		byId('extended_settings').style.display = "inline";
 	}
 	
 	function timeConverter(UNIX_timestamp){
