@@ -1990,7 +1990,7 @@
 								<!--Netzwerkliste -->
 						</table>
 						<hr />
-						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungsdaten löschen</p>
+						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungen löschen</p>
 					</div>
 				</div>
 			</div>
@@ -2232,7 +2232,7 @@
 			<table class="table_nav" cellpadding="0" cellspacing="0" width="100%" border="0">
 				<tr>
 				  <td><span onclick="showIndex();"><span class="icon-arrow_left"></span>Zurück</span></td>
-				  <td><span onclick="setsystem();">Speichern<span class="icon-arrow_right"></span></span></td>
+				  <td><span onclick="setSystem();">Speichern<span class="icon-arrow_right"></span></span></td>
 				</tr>
 			</table>
 			<h3 class="headtitle">System Einstellungen</h3>
@@ -2286,7 +2286,8 @@
 				<div class="pure-u-1-1 pure-u-md-1-1 pure-u-lg-1-1">
 					<div class="1-box channel_conf">
 						<form>							
-								
+							<p class="pure-button pure-button-primary" onclick="restart();">Restart Nano</p>
+							<p class="pure-button pure-button-primary" onclick="sethwversion();">Set V2</p>
 						</form>
 					</div>
 				</div>
@@ -2490,7 +2491,7 @@
 							<tr><td>&#10032;&nbsp;Björn Schrader</td></tr>
 							<tr><td>&#10032;&nbsp;Alexander Schäfer</td></tr>
 							<tr><td>&#10032;&nbsp;Steffen Ochs</td></tr>
-							<tr><td ondblclick="showExtendedSettings();">&#10032;&nbsp;Florian Riedl</td></tr>
+							<tr><td onclick="touchStart();">&#10032;&nbsp;Florian Riedl</td></tr>
 							<tr><td>&#10032;&nbsp;Maik Kaste</td></tr>
 						</table>
 					</div>
@@ -2581,7 +2582,7 @@
 	}
 	
 	function clearWifi(){
-		txt = 'Sollen wirklich alle Netzwerkverbindungsdaten gelöscht werden?\nNano startet danach im AP-Modus neu.';
+		txt = 'Sollen wirklich alle Netzwerkverbindungen gelöscht werden?';
 		if (confirm(txt) == true) {
 			loadJSON('clearwifi', '', '60000', function (response) {
                 if(response == 'true'){      
@@ -3327,6 +3328,34 @@
 	function showExtendedSettings(){
 		hideAll();
 		byId('extended_settings').style.display = "inline";
+	}
+	
+	var clickTimer = null;
+	function touchStart() {
+		if (clickTimer == null) {
+			clickTimer = setTimeout(function () {
+				clickTimer = null;
+				//alert("single");
+			}, 500)
+		} else {
+			clearTimeout(clickTimer);
+			clickTimer = null;
+			showExtendedSettings();
+		}
+	}	
+
+	function restart(){
+		txt = 'Nano neu starten?';
+		if (confirm(txt) == true) {
+			loadJSON('restart', '', '60000', function (response) {});
+        }
+	}
+
+	function sethwversion(){
+		txt = 'Wollen Sie die HW-Version auf v2 setzen?';
+		if (confirm(txt) == true) {
+			loadJSON('v2', '', '60000', function (response) {});
+        }
 	}
 	
 	function timeConverter(UNIX_timestamp){
