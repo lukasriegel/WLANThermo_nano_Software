@@ -477,6 +477,11 @@ static inline void button_event() {
         if (mupi) tempor = !tempor;
         if (event[2]) pitmaster.active = tempor;
         break;
+
+      case 11: // SSID -> Clear Wifi
+        //setconfig(eWIFI,{}); // clear Wifi settings
+        // Hinweis notwendig
+        break;
         
       case 14:  // Unit Change
         if (event[1]) {
@@ -519,7 +524,6 @@ static inline void button_event() {
         break;
 
       case 17:  // UPDATE
-        if (event[1]) tempor = sys.fastmode;
         sys.getupdate = FIRMWAREVERSION;
         sys.update = 1;
         break;

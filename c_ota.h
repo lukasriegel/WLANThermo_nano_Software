@@ -120,8 +120,8 @@ void do_http_update() {
       adress += createParameter(HARDWAREVS);
       adress += createParameter(SOFTWAREVS);
 
-      // UPDATE 1x Wiederholen falls schief gelaufen
-      if (sys.updatecount < 2) sys.updatecount++;   // eine Wiederholung
+      // UPDATE 2x Wiederholen falls schief gelaufen
+      if (sys.updatecount < 3) sys.updatecount++;   // Wiederholung
       else  {
         sys.update = 0;
         setconfig(eSYSTEM,{});

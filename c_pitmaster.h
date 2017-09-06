@@ -490,6 +490,7 @@ void pitmaster_control() {
       pitmaster.last = millis();
 
       // DUTY CYCLE PROCESS
+      // bei Servo beide male zuerst in die Mitte
       if (dutycycle.on)  {
         if (!dutycycle.dc && (millis() - dutycycle.timer < 1000)) pitmaster.value = 50;   // Startanlauf
         else pitmaster.value = dutycycle.value;
@@ -509,11 +510,12 @@ void pitmaster_control() {
             break;
 
           case 2:   // SERVO
+            int msec = map(pitmaster.value,0,100,SERVOPULSMIN,SERVOPULSMAX);
             digitalWrite(PITSUPPLY, LOW);   // keine 12V Supply
             noInterrupts();
             unsigned long time1 = micros();
             digitalWrite(PITMASTER1, HIGH);
-            while (micros() - time1 < pitmaster.value) {}
+            while (micros() - time1 < msec) {}
             digitalWrite(PITMASTER1, LOW);
             interrupts();
             break;
@@ -606,6 +608,9 @@ void DC_control(bool dc, byte aktor, int val) {
     pitmaster.manual = true;    // nur für die Anzeige
   }
 }
+
+
+// Autotune braucht einen Mindestsprung für die _a Werte
 
 
 

@@ -65,6 +65,9 @@ float calcT(int r, byte typ){
   case 10: // Santos
     Rn = 200.82; a = 3.3561093e-03; b = 2.3552814e-04; c = 2.1375541e-06; 
     break;
+  case 11:
+    //Rn = ((r * 2.048 )/ 4096.0)*1000.0;
+    return ampere;
    
   default:  
     return INACTIVEVALUE;

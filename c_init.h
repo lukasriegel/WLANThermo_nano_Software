@@ -614,7 +614,7 @@ void timer_iot() {
   // NANO CLOUD
   if (millis() - lastUpdateCloud > (iot.CL_int * 1000)) {
 
-    if (!isAP && sys.update == 0 && iot.CL_on) {
+    if (!isAP && sys.update == 0 && iot.CL_on && now() > 60) {  // nicht senden, falls utc noch nicht eingetroffen
         sendDataCloud();
     }
     lastUpdateCloud = millis();
@@ -624,7 +624,7 @@ void timer_iot() {
   if (millis() - lastUpdateLog > INTERVALCOMMUNICATION) {
 
     if (!isAP && sys.update == 0 && chart.on) {
-        sendServerLog();
+        //sendServerLog();
     }
     lastUpdateLog = millis();
   }

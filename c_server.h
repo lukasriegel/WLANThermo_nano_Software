@@ -22,6 +22,8 @@
 // Beispiele:
 // https://github.com/spacehuhn/wifi_ducky/blob/master/esp8266_wifi_duck/esp8266_wifi_duck.ino
 
+// WebSocketClient: https://github.com/Links2004/arduinoWebSockets/issues/119
+
 struct myRequest {
   String host;
   String url;
@@ -342,8 +344,8 @@ void server_setup() {
       +"heap: "+String(ESP.getFreeHeap()) + "\n"
       +"sn: "+String(ESP.getChipId(), HEX) + "\n"
       +"batmin: "+String(battery.min) + "\n"
-      +"batmax: "+String(battery.max)
-      +"bat: "+String(battery.percentage));
+      +"batmax: "+String(battery.max) + "\n"
+      +"bat: "+String(battery.voltage));
   });
 
   server.on("/god",[](AsyncWebServerRequest *request){
@@ -388,6 +390,12 @@ void server_setup() {
     set_pid(1);
     setconfig(ePIT,{});
     request->send(200, "text/plain", "Reset pitmaster config");
+  });
+
+  server.on("/ampere",[](AsyncWebServerRequest *request){
+    ch[5].typ = 11;
+    setconfig(eCHANNEL,{});
+    request->send(200, "text/plain", "Strommessung an Kanal 6");
   });
 
   server.on("/newtoken",[](AsyncWebServerRequest *request){

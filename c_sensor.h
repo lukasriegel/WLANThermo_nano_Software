@@ -271,6 +271,26 @@ void controlAlarm(bool action){                // action dient zur Pulsung des S
   }  
 }
 
+unsigned long ampere_sum = 0;
+unsigned long ampere_con = 0;
+float ampere = 0;
+unsigned long ampere_time;
+
+void ampere_control() {
+    
+    ampere_sum += ((get_adc_average(5) * 2.048 )/ 4096.0)*1000.0;
+    ampere_con++;
+
+    if (millis()-ampere_time > 10*60*1000) {
+      ampere_time = millis();
+      ampere = ampere_sum/ampere_con;
+      ampere_con = 0;
+      ampere_sum = 0;
+    }
+
+  
+}
+
 
 
 
