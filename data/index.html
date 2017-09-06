@@ -1990,7 +1990,7 @@
 								<!--Netzwerkliste -->
 						</table>
 						<hr />
-						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungen löschen</p>
+						<p class="pure-button pure-button-primary" onclick="clearWifi();">Netzwerkverbindungsdaten löschen</p>
 					</div>
 				</div>
 			</div>
@@ -2582,7 +2582,7 @@
 	}
 	
 	function clearWifi(){
-		txt = 'Sollen wirklich alle Netzwerkverbindungen gelöscht werden?';
+		txt = 'Sollen wirklich alle Netzwerkverbindungsdaten gelöscht werden?\nNano startet danach im AP-Modus neu.';
 		if (confirm(txt) == true) {
 			loadJSON('clearwifi', '', '60000', function (response) {
                 if(response == 'true'){      
