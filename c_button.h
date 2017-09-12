@@ -497,7 +497,6 @@ static inline void button_event() {
             transform_limits();                             // Transform Limits
             setconfig(eCHANNEL,{});                      // Save Config
             get_Temperature();                              // Update Temperature
-            DPRINTPLN("[INFO]\tEinheitenwechsel");
           }
         }
         break;

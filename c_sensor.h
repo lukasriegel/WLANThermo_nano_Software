@@ -107,30 +107,32 @@ void get_Vbat() {
   set_batdetect(HIGH);
   byte curStateNone = digitalRead(CHARGEDETECTION);
   // Ladeanzeige
-  battery.charge = curStateNone;
+  battery.charge = !curStateNone;
   
   // Standby erkennen
   if (voltage < 10) {
-    stby = true;
-    return;
+    sys.stby = true;
+    //return;
   }
-  else stby = false;
+  else sys.stby = false;
 
   // Transformation Digitalwert in Batteriespannung
   voltage = voltage * BATTDIV; 
 
   // Referenzwert bei COMPLETE neu setzen
   if ((curStateNone && curStatePull) && battery.setreference) {     // COMPLETE
-    if (battery.voltage > 0) {
+    if (battery.voltage > 0 && !sys.stby) {
       if (battery.voltage < battery.max) {
         battery.max = battery.voltage-10;      
         // Grenze etwas nach unten versetzen, um die Ladespannung zu kompensieren
         // alternativ die Speicherung um 5 min verschieben, Gefahr: das dann schon abgeschaltet
-        setconfig(eSYSTEM,{});                                      // SPEICHERN
-        DPRINTF("[INFO]\tNew battery voltage reference: %umV\r\n", battery.max); 
+        //setconfig(eSYSTEM,{});                                      // SPEICHERN
+        IPRINTF("New battery voltage reference: %umV\r\n", battery.max); 
       }
     }
     battery.setreference = false;
+    battery_set_full(1);
+    
   } else if (!curStateNone && !curStatePull) {                      // LOAD
     battery.setreference = true;
   }
@@ -144,6 +146,7 @@ void get_Vbat() {
   
 }
 
+#define THRESHOLD 3700
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Calculate SOC
@@ -155,14 +158,48 @@ void cal_soc() {
   if (vol_count > 0) voltage = vol_sum / vol_count;
   else voltage = 0;
   median_add(voltage);
-  battery.voltage = median_average();
+
+  int average = median_average(); 
+  int rate = 0; 
+  int drift = 0;
+
+  if (battery.full == 0)   {               // wenn geladen wird, oder bei Systemstart
+    
+    if (battery.charge && battery.startload != 0) {   // Systemstart ausschließen
+      rate = (30*battery.sincefull/600000);   //1000*60 *10  // 3.0 mV/min  // > 400 mA/h
+      drift = (average - battery.voltage)/20;
+
+      voltage = battery.startload + rate + drift;
+      
+    } else voltage = average;     // Systemstart   
+  
+  } else {                                  // Battery Simulation
+      
+    if (battery.sincefull != 0)  {         // Kein Laden, keine Quelle
+      rate = (4*battery.sincefull/600000);  // 1000*60 *10  // 0.4 mV/min
+
+      if (battery.voltage > battery.min) {  // Start abfangen, da ist voltage = 0
+        if (average < THRESHOLD || battery.voltage < THRESHOLD)    // Soll/Ist Drift
+          battery.drift += (average - battery.voltage)/10;          // beschleunigte Anpassung
+        else  battery.drift += (average - battery.voltage)/20;    // normale Anpassung, Aenderung bei Abstand > 20
+      }
+    } else  {   // Am Laden, Quelle verhanden
+      rate = 0;
+      drift = 0;
+    }
+
+    voltage = battery.full - rate + battery.drift;
+
+  }
+
+  battery.voltage = voltage;
   
   battery.percentage = ((battery.voltage - battery.min)*100)/(battery.max - battery.min);
   
   // Schwankungen verschiedener Batterien ausgleichen
   if (battery.percentage > 100) battery.percentage = 100;
   
-  DPRINTF("[INFO]\tBattery voltage: %umV,\tcharge: %u%%\r\n", battery.voltage, battery.percentage); 
+  IPRINTF("Battery voltage: %umV,\tcharge: %u%%\r\n", battery.voltage, battery.percentage); 
 
   // Abschaltung des Systems bei <0% Akkuleistung
   if (battery.percentage < 0) {
@@ -233,8 +270,8 @@ void controlAlarm(bool action){                // action dient zur Pulsung des S
         // first rising limits
 
         bool sendM = true;
-        //if (!isAP && iot.TS_httpKey != "") {
-        if (!isAP) {      
+        //if (wifi.mode == 1 && iot.TS_httpKey != "") {
+        if (wifi.mode == 1) {            // was ist wenn kein Wifi?  
           notification.ch = i+1;
           if (ch[i].temp > ch[i].max) notification.limit = 1;
           else if (ch[i].temp < ch[i].min) notification.limit = 0;
@@ -287,7 +324,65 @@ void ampere_control() {
       ampere_con = 0;
       ampere_sum = 0;
     }
+}
 
+
+// Sobald geladen wird, Referenzen neu setzen / zurücksetzen
+void battery_reset_reference() {
+
+  if (battery.charge) {
+  
+    if (battery.full != 0) {        // Full Referenz zurücksetzen
+      battery.full = 0;
+      battery.sincefull = 0;          // Entladezeit zurücksetzen
+      setconfig(eSYSTEM,{});
+      Serial.println("Battery Start Loading");
+    }
+  
+    if (battery.startload == 0 && !sys.stby) {   // Start Load Reference zu Beginn des Ladens setzen
+      battery.startload = battery.voltage;
+      // bei Systemstart überhöht, gepeichert wäre besser
+      Serial.println("Battery Load Start Reference");
+    }
+  }
+}
+
+// Battery Full Reference (Ladeendpunkt) setzen
+void battery_set_full(bool full) {
+  if (full) battery.full = battery.max;     
+  else  battery.full = constrain(median_average(),0,BATTMAX);  
+  battery.sincefull = 0;
+  battery.startload = 0;
+  setconfig(eSYSTEM,{});
+  Serial.println("Battery Full Reference");
+}
+
+
+#define INTERVALBATTERYSIMULATION 1000*60*5
+void battery_simulation() {
+
+  // Full Referenz noch nicht gesetzt, da nicht vollständig aufgeladen
+  // aber nicht direkt nach Systemstart
+  if (battery.full == 0 && !battery.charge && millis() > INTERVALCOMMUNICATION) {
+    battery_set_full(0);
+  }
+
+  
+  if ((millis() - lastUpdateBattery > INTERVALBATTERYSIMULATION)) {
+
+    // Batterie-Entladezeit, darf nur laufen, wenn keine Quelle anhängt
+    if (!battery.charge && (median_average() < battery.max)) {   // kein Laden, Quelle entfernt
+      battery.sincefull += INTERVALBATTERYSIMULATION;
+      setconfig(eSYSTEM,{});
+         
+    } else if (battery.charge) {            // Ladezeit
+      battery.sincefull += INTERVALBATTERYSIMULATION;
+    }
+    
+    lastUpdateBattery = millis();
+    Serial.print("Battery Time: ");
+    Serial.println(battery.sincefull);
+  }
   
 }
 

@@ -24,6 +24,8 @@ byte flash = 0;                       // Flash Battery Symbol in Status Row
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Frame while system start 
 void drawConnect() {
+
+    displayblocked = true;
     
     display.clear();
     display.setColor(WHITE);
@@ -43,7 +45,7 @@ void drawLoading() {
   display.setTextAlignment(TEXT_ALIGN_CENTER);
   display.setFont(ArialMT_Plain_10);
   
-  if (!battery.charge) {
+  if (battery.charge) {
     display.fillRect(18,3,2,4); //Draw battery end button
     display.fillRect(16,8,1,1); //Untere Ecke
     display.drawRect(0,1,16,7); //Draw Outline
@@ -215,17 +217,17 @@ void gBattery(OLEDDisplay *display, OLEDDisplayUiState* state) {
   else  display->drawString(24,0,String(battery.percentage)); 
   
   display->setTextAlignment(TEXT_ALIGN_RIGHT);
-  if (isAP == 1)  display->drawString(128,0,"AP");
-  else if (isAP == 2) display->drawString(128,0,"NO");
-  else if (isAP == 0)  {
-    //display->drawString(128,0,String(rssi)+" dBm");
+  if (wifi.mode == 2)  display->drawString(128,0,"AP");
+  else if (wifi.mode == 0) display->drawString(128,0,"NO");
+  else if (wifi.mode == 1)  {
+    //display->drawString(128,0,String(wifi.rssi)+" dBm");
     display->fillRect(116,8,2,1); //Draw ground line
     display->fillRect(120,8,2,1); //Draw ground line
     display->fillRect(124,8,2,1); //Draw ground line
 
-    if (rssi > -105) display->fillRect(116,5,2,3); //Draw 1 line
-    if (rssi > -95) display->fillRect(120,3,2,5); //Draw 2 line
-    if (rssi > -80) display->fillRect(124,1,2,7); //Draw 3 line
+    if (wifi.rssi > -105) display->fillRect(116,5,2,3); //Draw 1 line
+    if (wifi.rssi > -95) display->fillRect(120,3,2,5); //Draw 2 line
+    if (wifi.rssi > -80) display->fillRect(124,1,2,7); //Draw 3 line
   }
 
   //display->drawString(80,0,String(map(pit_y,0,pit_pause,0,100)) + "%");
@@ -233,7 +235,7 @@ void gBattery(OLEDDisplay *display, OLEDDisplayUiState* state) {
   if (sys.fastmode) display->drawString(100,0,"F");
   
   if (flash && battery.percentage < 10) {} // nothing for flash effect
-  else if (!battery.charge) {
+  else if (battery.charge) {
     display->fillRect(18,3,2,4); //Draw battery end button
     display->fillRect(16,8,1,1); //Untere Ecke
     display->drawRect(0,1,16,7); //Draw Outline
@@ -384,15 +386,15 @@ void drawsys(OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int16_t
   switch (current_frame) {
 
     case 11:         // SSID
-      if (isAP == 1)      display->drawString(120, 36, sys.apname);
-      else if (isAP == 0) display->drawString(120, 36, WiFi.SSID());
-      else if (isAP == 2) display->drawString(120, 36, "");
+      if (wifi.mode == 2)      display->drawString(120, 36, sys.apname);
+      else if (wifi.mode == 1) display->drawString(120, 36, WiFi.SSID());
+      else if (wifi.mode == 0) display->drawString(120, 36, "");
       break;
     
     case 12:         // IP
-      if (isAP == 1)      display->drawString(120, 36, WiFi.softAPIP().toString());
-      else if (isAP == 0) display->drawString(120, 36, WiFi.localIP().toString());
-      else if (isAP == 2) display->drawString(120, 36, "");
+      if (wifi.mode == 2)      display->drawString(120, 36, WiFi.softAPIP().toString());
+      else if (wifi.mode == 1) display->drawString(120, 36, WiFi.localIP().toString());
+      else if (wifi.mode == 0) display->drawString(120, 36, "");
       break;
 
     case 13:         // HOST

@@ -164,7 +164,7 @@ class NanoWebHandler: public AsyncWebHandler {
 
     system["time"] = String(now());
     system["soc"] = battery.percentage;
-    system["charge"] = !battery.charge;
+    system["charge"] = battery.charge;
     system["rssi"] = rssi;
     system["unit"] = temp_unit;
     //system["sn"] = String(ESP.getChipId(), HEX);
@@ -227,7 +227,7 @@ class NanoWebHandler: public AsyncWebHandler {
   
       if (WiFi.status() == WL_CONNECTED)  {
         json["Connect"]   = true;
-        json["Scantime"]  = millis()-scantime;
+        json["Scantime"]  = millis()-wifi.scantime;
         json["SSID"]      = WiFi.SSID();
         json["IP"]        = WiFi.localIP().toString();
         json["Mask"]      = WiFi.subnetMask().toString();  
@@ -264,10 +264,12 @@ class NanoWebHandler: public AsyncWebHandler {
 
     //dumpClients();
 
+    // kein Scan zu Systemstart sonst keine Reconnection nach Systemstart
+
     WiFi.scanDelete();
     if (WiFi.scanComplete() == -2){
-      WiFi.scanNetworks(true);
-      scantime = millis();
+      WiFi.scanNetworks(true);        // true = scan async
+      wifi.scantime = millis();
 
       if (www) request->send(200, "text/json", "OK");
       else Serial.println("OK");
@@ -463,7 +465,7 @@ public:
     
     // REQUEST: /stop wifi
     } else if ((request->method() == HTTP_POST || request->method() == HTTP_GET) &&  request->url() == NETWORK_STOP) { 
-      isAP = 4; // Turn Wifi off with timer
+      wifi.mode = 4; // Turn Wifi off with timer
       request->send(200, "text/plain", "true");
     
     // REQUEST: /clear wifi
@@ -472,7 +474,8 @@ public:
         request->send(200, "text/html", "<form method='POST' action='/clearwifi'>Wifi-Speicher wirklich leeren?<br><br><input type='submit' value='Ja'></form>");
       } else if (request->method() == HTTP_POST) {
         setconfig(eWIFI,{}); // clear Wifi settings
-        restartnow = true;
+        sys.restartnow = true;
+        wifi.mode = 5;
         request->send(200, "text/json", "true");
       } else request->send(500, "text/plain", BAD_PATH);
 
@@ -613,7 +616,6 @@ class BodyWebHandler: public AsyncWebHandler {
       transform_limits();                             // Transform Limits
       setconfig(eCHANNEL,{});                         // Save Config
       get_Temperature();                              // Update Temperature
-      DPRINTLN("[INFO]\tChange Unit");
     }
   
     return 1;
@@ -664,7 +666,7 @@ class BodyWebHandler: public AsyncWebHandler {
     if (!_network.containsKey("password")) return 0;
     holdssid.pass = _network["password"].asString();
     holdssid.connect = millis();
-    holdssid.hold = true;
+    holdssid.hold = 1;
   
     return 1;
   }

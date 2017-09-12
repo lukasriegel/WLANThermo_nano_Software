@@ -18,55 +18,64 @@
   HISTORY: Please refer Github History
 
  ****************************************************/
+
+//#define MQTT_DEBUG              // ENABLE SERIAL MQTT DEBUG MESSAGES
+
+#ifdef MQTT_DEBUG
+  #define MQPRINT(...)    Serial.print(__VA_ARGS__)
+  #define MQPRINTLN(...)  Serial.println(__VA_ARGS__)
+  #define MQPRINTP(...)   Serial.print(F(__VA_ARGS__))
+  #define MQPRINTPLN(...) Serial.println(F(__VA_ARGS__))
+  #define MQPRINTF(...)   Serial.printf(__VA_ARGS__)
+  
+#else
+  #define MQPRINT(...)     //blank line
+  #define MQPRINTLN(...)   //blank line 
+  #define MQPRINTP(...)    //blank line
+  #define MQPRINTPLN(...)  //blank line
+  #define MQPRINTF(...)    //blank line
+#endif
+ 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// MQTT
+// Start MQTT
 void connectToMqtt() {
-  DPRINTLN();
-  DPRINTP("[INFO]\tWiFi connected to: ");
-  DPRINTLN(WiFi.SSID());
-  DPRINTP("[INFO]\tIP address: ");
-  DPRINTLN(WiFi.localIP());
-  DPRINTPLN("[INFO]\tConnecting to MQTT...");
-  pmqttClient.connect();
+  if (iot.P_MQTT_on) pmqttClient.connect();
 }
 
-void onWifiConnect(const WiFiEventStationModeGotIP& event) {
-  connectToMqtt();
-}
-
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// MQTT Handler
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-  DPRINTPLN("[INFO]\tDisconnected from MQTT.");
+  IPRINTPLN("d:MQTT");
   if (WiFi.isConnected()) connectToMqtt;
 }
 
 void onMqttConnect(bool sessionPresent) {
-  DPRINTPLN("[INFO]\tConnected to MQTT.");
-  DPRINTP("[INFO]\tSession present: ");
-  DPRINTLN(sessionPresent);
+  IPRINTPLN("c:MQTT");
+  MQPRINTP("[MQTT]\tSession present: ");
+  MQPRINTLN(sessionPresent);
   String adress = F("WLanThermo/");
   adress += sys.host;
   adress += F("/set/#");
   uint16_t packetIdSub = pmqttClient.subscribe(adress.c_str(), 2);
-  DPRINTP("[INFO]\tSubscribing at QoS 2, packetId: ");
-  DPRINTLN(packetIdSub);
+  MQPRINTP("[MQTT]\tSubscribing at QoS 2, packetId: ");
+  MQPRINTLN(packetIdSub);
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  DPRINTPLN("[INFO]\tSubscribe acknowledged.");
-  DPRINTP("[INFO]\t  packetId: ");
-  DPRINTLN(packetId);
-  DPRINTP("[INFO]\t  qos: ");
-  DPRINTLN(qos);
+  MQPRINTPLN("[MQTT]\tSubscribe acknowledged.");
+  MQPRINTP("packetId: ");
+  MQPRINTLN(packetId);
+  MQPRINTP("qos: ");
+  MQPRINTLN(qos);
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-  DPRINTPLN("[INFO]\tUnsubscribe acknowledged.");
-  DPRINTP("[INFO]\t  packetId: ");
-  DPRINTLN(packetId);
+  MQPRINTPLN("[MQTT]\tUnsubscribe acknowledged.");
+  MQPRINTP("packetId: ");
+  MQPRINTLN(packetId);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-
   String topic_prefix = F("WLanThermo/");
   topic_prefix += sys.host;
   topic_prefix += F("/set/");
@@ -105,14 +114,16 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     setconfig(eCHANNEL, {});
     loadconfig(eCHANNEL);
   } 
-  }
+}
   
   // skeleton
   // if (topic_short.startsWith("dummy")) {
   // }
 
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Configuration MQTT
 void set_pmqtt() {
-  wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   pmqttClient.onConnect(onMqttConnect);
   pmqttClient.onDisconnect(onMqttDisconnect);
   pmqttClient.onSubscribe(onMqttSubscribe);
@@ -121,7 +132,6 @@ void set_pmqtt() {
   pmqttClient.setServer(iot.P_MQTT_HOST.c_str(), iot.P_MQTT_PORT);
   pmqttClient.setCredentials(iot.P_MQTT_USER.c_str(), iot.P_MQTT_PASS.c_str());
 }
-
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -169,15 +179,14 @@ void sendpmqtt() {
 
  
     String wlan_adress = prefix + "wlan";
-    String postwlanStr = String(rssi);
+    String postwlanStr = String(wifi.rssi);
     pmqttClient.publish(wlan_adress.c_str(), iot.P_MQTT_QoS, false, postwlanStr.c_str());
 
 
-
-    DPRINTF("[INFO]\tPublish to MQTTbroker: %ums\r\n", millis() - vorher);
+    MQPRINTF("[MQTT]\tp: %ums\r\n", millis() - vorher);   // Published to MQTT Broker
 
   } else {
-    DPRINTPLN("[INFO]\tNot Connected to MQTT Broker");
+    MQPRINTPLN("[MQTT]\tf:");        // not connect to MQTT Broker
     pmqttClient.connect();
   }
 }

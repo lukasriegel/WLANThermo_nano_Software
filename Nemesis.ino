@@ -25,7 +25,7 @@
 
 // Entwicklereinstellungen
 //#define ASYNC_TCP_SSL_ENABLED 1
-#define OTA                                 // ENABLE OTA UPDATE
+//#define OTA                                 // ENABLE OTA UPDATE
 #define DEBUG                               // ENABLE SERIAL DEBUG MESSAGES
 
 #ifdef DEBUG
@@ -34,12 +34,23 @@
   #define DPRINTP(...)   Serial.print(F(__VA_ARGS__))
   #define DPRINTPLN(...) Serial.println(F(__VA_ARGS__))
   #define DPRINTF(...)   Serial.printf(__VA_ARGS__)
+  #define IPRINT(...)    Serial.print("[INFO]\t");Serial.print(__VA_ARGS__)
+  #define IPRINTLN(...)  Serial.print("[INFO]\t");Serial.println(__VA_ARGS__)
+  #define IPRINTP(...)   Serial.print("[INFO]\t");Serial.print(F(__VA_ARGS__))
+  #define IPRINTPLN(...) Serial.print("[INFO]\t");Serial.println(F(__VA_ARGS__))
+  #define IPRINTF(...)   Serial.print("[INFO]\t");Serial.printf(__VA_ARGS__)
+  
 #else
   #define DPRINT(...)     //blank line
   #define DPRINTLN(...)   //blank line 
   #define DPRINTP(...)    //blank line
   #define DPRINTPLN(...)  //blank line
   #define DPRINTF(...)    //blank line
+  #define IPRINT(...)     //blank line
+  #define IPRINTLN(...)   //blank line
+  #define IPRINTP(...)    //blank line
+  #define IPRINTPLN(...)  //blank line
+  #define IPRINTF(...)    //blank line
 #endif
 
 
@@ -64,25 +75,24 @@
 #include "c_ota.h"
 #include "c_server.h"
 
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // SETUP
 void setup() {  
 
   // Initialize Serial 
-  set_serial(); //Serial.setDebugOutput(true);
+  set_serial(); Serial.setDebugOutput(true);
   
   // Initialize OLED
   set_OLED();
 
-  // Current Battery Voltage
-  get_Vbat();
-  
-  if (!stby) {
+  // Open Config-File
+  check_sector();
+  setEE(); start_fs();
 
-    // Open Config-File
-    check_sector();
-    setEE(); start_fs();
+  // Current Battery Voltage
+  get_Vbat(); get_rssi();
+  
+  if (!sys.stby) {
 
     // Initalize Aktor
     set_piepser();
@@ -97,14 +107,6 @@ void setup() {
     
     // Initialize Wifi
     set_wifi();
-
-    // Update Time
-    //set_time();
-    
-    // Scan Network
-    WiFi.scanNetworks(true);
-    scantime = millis();
-    //scantime = String(mynow());
 
     // Initialize Server
     server_setup();
@@ -130,7 +132,7 @@ void setup() {
     set_pitmaster(0); 
 
     // Check HTTP Update
-    check_http_update();
+    //check_http_update();    // verschoben in wifi handler
   }
 }
 
@@ -139,16 +141,26 @@ void setup() {
 // LOOP
 void loop() {
 
+  // Rücksetzung Battery Simulation
+  battery_reset_reference();
+  
   // Standby oder Mess-Betrieb
   if (standby_control()) return;
 
-  if (restartnow) {
+  if (millis() > 5000 && question.typ == SYSTEMSTART) {
+    displayblocked = false;   // Close Start Screen (if not already done)
+    question.typ = NO;
+  }
+  
+  if (sys.restartnow) {
+    if (wifi.mode == 5) WiFi.disconnect();
     delay(100);
     yield();
     ESP.restart();
   }
 
   // WiFi Monitoring
+  controlWifiMode();
   wifimonitoring();
 
   // Detect Serial
@@ -186,8 +198,10 @@ void loop() {
     flash_control();          // Flash
 
     ampere_control();
+
+    battery_simulation();
     
-    delay(5);   // sonst geht das Wifi Modul nicht in Standby, yield() reicht nicht!
+    delay(10);   // sonst geht das Wifi Modul nicht in Standby, yield() reicht nicht!
   }
   
 }

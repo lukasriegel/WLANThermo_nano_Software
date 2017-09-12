@@ -32,7 +32,7 @@ void read_serial(char *buffer) {
   // Falls zusätzliche Attribute vorhanden
   if (index > 0) {
     String command = str.substring(0,index);
-    DPRINTP("[INFO]\tSerial Command: ");
+    IPRINTP("Serial: ");
     DPRINTLN(command);
 
     // Umsortieren
@@ -53,7 +53,7 @@ void read_serial(char *buffer) {
       if (payload.indexOf("v") == 0) {
         sys.getupdate = payload;  // kein Speichern, da während des Updates eh gespeichert wird
         sys.update = 1;  
-      } else  DPRINTPLN("[INFO]\tUpdateversion nicht erkannt!");
+      } else  {IPRINTPLN("Update unbekannt!");}
       return;    
     }
   
@@ -98,11 +98,13 @@ void read_serial(char *buffer) {
 */
     else if (str == "clearwifi") {
       setconfig(eWIFI,{}); // clear Wifi settings
+      wifi.mode = 5;
+      sys.restartnow = true;
       return;
     }
 
     else if (str == "stopwifi") {
-      isAP = 3; // Turn Wifi off
+      wifi.mode = 3;  // Turn Wifi off
       return;
     }
   
@@ -119,14 +121,10 @@ void read_serial(char *buffer) {
       return;
     }
 
-    else if (str == "getSSID") {
-      Serial.println(WiFi.SSID());
-      return;
-    }
-
     // RESTART SYSTEM
     else if (str == "restart") {
-      ESP.restart();
+      sys.restartnow = true;
+      return;
     }
 
     // LET ESP SLEEP
@@ -136,16 +134,10 @@ void read_serial(char *buffer) {
       delay(100); // notwendig um Prozesse zu beenden
     }
 
-    // GET FIRMWAREVERSION
-    else if (str == "getVersion") {
-      Serial.println(FIRMWAREVERSION);
-      return;
-    }
-
     // Reset PITMASTER PID
     else if (str == "setPID") {
       set_pid(0);  // Default PID-Settings
-      if (setconfig(ePIT,{})) DPRINTPLN("[INFO]\tReset pitmaster config");
+      if (setconfig(ePIT,{})) {IPRINTPLN("r:pm");}
       return;
     }
 
@@ -176,7 +168,7 @@ void read_serial(char *buffer) {
 
     // GET MAC
     else if (str == "mac") {
-      DPRINTLN(getMacAddress());
+      IPRINTLN(getMacAddress());
       return;
     }
 
@@ -201,10 +193,10 @@ void read_serial(char *buffer) {
 
   }
 
-  DPRINTP("[INFO]\tYou entered: >");
+  IPRINTP("You entered: >");
   DPRINT(buffer);
   DPRINTPLN("<");
-  DPRINTPLN("[INFO]\tUnkwown command");     // Befehl nicht erkannt  
+  DPRINTPLN("Unkwown command");     // Befehl nicht erkannt  
 }
 
 

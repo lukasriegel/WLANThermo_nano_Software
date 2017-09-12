@@ -21,7 +21,6 @@
 #include <Wire.h>                 // I2C
 #include <SPI.h>                  // SPI
 #include <ESP8266WiFi.h>          // WIFI
-#include <ESP8266WiFiMulti.h>     // WIFI
 //#include <WiFiClientSecure.h>     // HTTPS
 #include <TimeLib.h>              // TIME
 #include <EEPROM.h>               // EEPROM
@@ -50,7 +49,7 @@ extern "C" uint32_t _SPIFFS_end;        // FIRST ADRESS AFTER FS
 // SETTINGS
 
 // HARDWARE
-#define FIRMWAREVERSION "v0.8.1"
+#define FIRMWAREVERSION "v0.8.4"
 #define APIVERSION      "v1"
 
 // CHANNELS
@@ -84,6 +83,7 @@ extern "C" uint32_t _SPIFFS_end;        // FIRST ADRESS AFTER FS
 #define INTERVALBATTERYMODE 1000
 #define INTERVALSENSOR 1000
 #define INTERVALCOMMUNICATION 30000
+#define INTERVALBATTERYSIM 30000
 #define FLASHINWORK 500
 
 // BUS
@@ -105,15 +105,14 @@ extern "C" uint32_t _SPIFFS_end;        // FIRST ADRESS AFTER FS
 #define APNAME "NANO-AP"
 #define APPASSWORD "12345678"
 #define HOSTNAME "NANO-"
-#define NTP_PACKET_SIZE 48          // NTP time stamp is in the first 48 bytes of the message
 
 // FILESYSTEM
 #define CHANNELJSONVERSION 4        // FS VERSION
-#define EEPROM_SIZE 2176            // EEPROM SIZE
+#define EEPROM_SIZE 2304            // EEPROM SIZE
 #define EEWIFIBEGIN         0
 #define EEWIFI              300
 #define EESYSTEMBEGIN       EEWIFIBEGIN+EEWIFI
-#define EESYSTEM            250
+#define EESYSTEM            380
 #define EECHANNELBEGIN      EESYSTEMBEGIN+EESYSTEM
 #define EECHANNEL           500
 #define EETHINGBEGIN        EECHANNELBEGIN+EECHANNEL
@@ -130,6 +129,8 @@ extern "C" uint32_t _SPIFFS_end;        // FIRST ADRESS AFTER FS
 #define PITMASTERSIZE 5             // PITMASTER SETTINGS LIMIT
 #define PITMASTERSETMIN 50
 #define PITMASTERSETMAX 200
+
+#define INFOTEXT "[INFO]\t"
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -297,22 +298,29 @@ struct System {
    String getupdate;
    bool autoupdate;
    bool god;
-   bool pitsupply;        
+   bool pitsupply;     
+   //byte mode;             // WIFI MODE  (0 = OFF, 1 = STA, 2 = AP, 3/4 = Turn off)   
+   byte control;  
+   bool stby;                   // STANDBY
+   bool restartnow; 
 };
 
 System sys;
-bool stby = false;                // USB POWER SUPPLY?            
+
 byte pulsalarm = 1;
-bool restartnow = false;
 
 // BATTERY
 struct Battery {
   int voltage;                    // CURRENT VOLTAGE
-  bool charge;                    // CHARGE DETECTION
+  bool charge;                    // CHARGE DETECTION (invers)
   int percentage;                 // BATTERY CHARGE STATE in %
   bool setreference;              // LOAD COMPLETE SAVE VOLTAGE
   int max;                        // MAX VOLTAGE
   int min;
+  int16_t full;
+  int16_t startload;
+  unsigned long sincefull;
+  int drift;
 };
 
 Battery battery;
@@ -358,7 +366,7 @@ Chart chart;
 int current_ch = 0;               // CURRENTLY DISPLAYED CHANNEL     
 bool LADENSHOW = false;           // LOADING INFORMATION?
 bool displayblocked = false;                     // No OLED Update
-enum {NO, CONFIGRESET, CHANGEUNIT, OTAUPDATE, HARDWAREALARM, IPADRESSE, AUTOTUNE};
+enum {NO, CONFIGRESET, CHANGEUNIT, OTAUPDATE, HARDWAREALARM, IPADRESSE, AUTOTUNE, SYSTEMSTART};
 
 // OLED QUESTION
 struct MyQuestion {
@@ -372,22 +380,25 @@ MyQuestion question;
 enum {eCHANNEL, eWIFI, eTHING, ePIT, eSYSTEM, ePRESET};
 
 // WIFI
-ESP8266WiFiMulti wifiMulti;               // MULTIWIFI instance
-WiFiUDP udp;                              // UDP instance
-byte isAP = 2;                    // WIFI MODE  (0 = STA, 1 = AP, 2 = NO, 3 = Turn off)
-unsigned long isAPcount;
-String wifissid[5];
-String wifipass[5];
-int lenwifi = 0;
-long rssi = 0;                   // Buffer rssi
+struct Wifi {
+  byte mode;                       // WIFI MODE  (0 = OFF, 1 = STA, 2 = AP, 3/4 = Turn off), 5 = DICONNECT
+  unsigned long turnoffAPtimer;    // TURN OFF AP TIMER
+  byte savedlen;                   // LENGTH SAVED WIFI DATE
+  String savedssid[5];             // SAVED SSID
+  String savedpass[5];             // SAVED PASSWORD
+  int rssi;                        // BUFFER RSSI
+  byte savecount;                  // COUNTER
+  unsigned long scantime;          // LAST SCAN TIME
+  bool disconnectAP;               // DISCONNECT AP
+  bool revive;
+};
+Wifi wifi;
 
-long scantime;
-bool disconnectAP;
 struct HoldSSID {
-   unsigned long connect;
-   bool hold;             
-   String ssid;
-   String pass;
+   unsigned long connect;           // NEW WIFI DATA TIMER  (-1: in Process)
+   byte hold;                       // NEW WIFI DATA      
+   String ssid;                     // NEW SSID
+   String pass;                     // NEW PASSWORD
 };
 HoldSSID holdssid;
 
@@ -426,6 +437,8 @@ unsigned long lastUpdateCloud;
 unsigned long lastUpdateLog;
 unsigned long lastUpdateMQTT;
 
+unsigned long lastUpdateBattery;
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -447,6 +460,8 @@ byte set_sensor();                                // Initialize Sensors
 int  get_adc_average (byte ch);                   // Reading ADC-Channel Average
 void get_Vbat();                                   // Reading Battery Voltage
 void cal_soc();
+void battery_set_full(bool full);
+void battery_reset_reference();
 
 // TEMPERATURE (TEMP)
 float calcT(int r, byte typ);                     // Calculate Temperature from ADC-Bytes
@@ -486,6 +501,7 @@ double median_get();                              // get Median from Buffer
 
 // OTA
 void set_ota();                                   // Configuration OTA
+void check_http_update();
 
 // WIFI
 void set_wifi();                                  // Connect WiFi
@@ -493,8 +509,9 @@ void get_rssi();
 void reconnect_wifi();
 void stop_wifi();
 void check_wifi();
-time_t getNtpTime();
 WiFiEventHandler wifiConnectHandler;
+WiFiEventHandler wifiDHCPTimeout, wifiDisconnectHandler, softAPDisconnectHandler;  
+void connectToMqtt();
 
 //MQTT
 AsyncMqttClient pmqttClient;
@@ -558,9 +575,15 @@ void set_system() {
   battery.max = BATTMAX;
   battery.min = BATTMIN;
   sys.pitsupply = false;
+  battery.full = 0; // neu setzen
+  battery.startload = 0;
+  battery.sincefull = 0; 
+  battery.drift;
+
+  sys.restartnow = false;
 }
 
-
+String connectionStatus ( int which );
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Temperature and Battery Measurement Timer
 void timer_sensor() {
@@ -569,12 +592,14 @@ void timer_sensor() {
     get_Temperature();
     get_Vbat();
     lastUpdateSensor = millis();
+    //Serial.println(connectionStatus(WiFi.status()));
   }
 
-  if (millis() - lastUpdateRSSI > INTERVALCOMMUNICATION) {
+  if (millis() - lastUpdateRSSI > INTERVALBATTERYSIM) {
     get_rssi(); 
     cal_soc();
     lastUpdateRSSI = millis();
+    
   }
 }
 
@@ -598,7 +623,7 @@ void timer_iot() {
   // THINGSPEAK
   if (millis() - lastUpdateThingspeak > (iot.TS_int * 1000)) {
 
-    if (!isAP && sys.update == 0 && iot.TS_on) {
+    if (wifi.mode == 1 && sys.update == 0 && iot.TS_on) {
       if (iot.TS_writeKey != "" && iot.TS_chID != "") sendDataTS();
     }
     lastUpdateThingspeak = millis();
@@ -607,14 +632,14 @@ void timer_iot() {
   // PRIVATE MQTT
   if (millis() - lastUpdateMQTT > (iot.P_MQTT_int * 1000)) {
 
-    if (!isAP && sys.update == 0 && iot.P_MQTT_on) sendpmqtt();
+    if (wifi.mode == 1 && sys.update == 0 && iot.P_MQTT_on) sendpmqtt();
     lastUpdateMQTT = millis();
   }
 
   // NANO CLOUD
   if (millis() - lastUpdateCloud > (iot.CL_int * 1000)) {
 
-    if (!isAP && sys.update == 0 && iot.CL_on && now() > 60) {  // nicht senden, falls utc noch nicht eingetroffen
+    if (wifi.mode == 1 && sys.update == 0 && iot.CL_on && now() > 100000) {  // nicht senden, falls utc noch nicht eingetroffen
         sendDataCloud();
     }
     lastUpdateCloud = millis();
@@ -623,7 +648,7 @@ void timer_iot() {
   // NANO LOGS
   if (millis() - lastUpdateLog > INTERVALCOMMUNICATION) {
 
-    if (!isAP && sys.update == 0 && chart.on) {
+    if (wifi.mode == 1 && sys.update == 0 && chart.on) {
         //sendServerLog();
     }
     lastUpdateLog = millis();
@@ -772,34 +797,17 @@ tmElements_t * string_to_tm(tmElements_t *tme, char *str) {
   return tme;
 }
 
-/*
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Update Time
-void set_time() {
-  if (!isAP) {
-    while (now() < 30) {        // maximal 30 sec suchen
-      time_t present = getNtpTime();
-      if (present) setTime(present); 
-    }
-  }
-  
-  //setSyncProvider(getNtpTime);
-  DPRINTP("[INFO]\t");
-  DPRINTLN(digitalClockDisplay(mynow()));
-}
-*/
-
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Standby oder Mess-Betrieb
 bool standby_control() {
-  if (stby) {
+  if (sys.stby) {
 
     drawLoading();
     if (!LADENSHOW) {
       //drawLoading();
       LADENSHOW = true;
-      DPRINTPLN("[INFO]\tChange to Standby");
+      IPRINTPLN("Standby");
       //stop_wifi();  // führt warum auch immer bei manchen Nanos zu ständigem Restart
       //pitmaster.active = false;
       disableAllHeater();
@@ -812,7 +820,7 @@ bool standby_control() {
       get_Vbat();
       lastUpdateBatteryMode = millis();  
 
-      if (!stby) ESP.restart();
+      if (!sys.stby) ESP.restart();
     }
     
     return 1;
@@ -874,7 +882,7 @@ String newToken() {
 #define SENDTHINGSPEAK "Thingspeak"
 #define THINGSPEAKSERVER "api.thingspeak.com"
 #define NANOSERVER "nano.wlanthermo.de"
-#define UPDATESERVER "update.wlanthermo.de"
+#define UPDATESERVER "update.wlanthermo.de"   // früher nano.wlanthermo.de
 #define CLOUDSERVER "cloud.wlanthermo.de"
 #define MESSAGESERVER "message.wlanthermo.de" 
 #define SENDNOTELINK "/message.php"
@@ -1029,19 +1037,19 @@ void printClient(const char* link, int arg) {
 
   switch (arg) {
 
-    case CONNECTFAIL:   DPRINTP("[INFO]\tClient Connect Fail: ");
+    case CONNECTFAIL:   IPRINTP("f: ");    // Client Connect Fail
       break;
 
-    case SENDTO:        DPRINTP("[INFO]\tClient Send to:");
+    case SENDTO:        IPRINTP("s:");      // Client Send to
       break;
 
-    case DISCONNECT:    DPRINTP("[INFO]\tDisconnect Client: ");
+    case DISCONNECT:    IPRINTP("d:");     //Disconnect Client
       break;
 
-    case CLIENTERRROR:  DPRINTP("[INFO]\tClient Connect Error: ");
+    case CLIENTERRROR:  IPRINTP("f:");     // Client Connect Error:
       break; 
 
-    case CLIENTCONNECT: DPRINTP("[INFO]\tClient Connect: ");
+    case CLIENTCONNECT: IPRINTP("c: ");    // Client Connect
       break; 
   }
   DPRINTLN(link);

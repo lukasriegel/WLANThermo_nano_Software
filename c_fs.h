@@ -75,7 +75,7 @@ bool checkjson(JsonVariant json, const char* filename) {
   
   if (!json.success()) {
     
-    DPRINTP("[INFO]\tFailed to parse: ");
+    IPRINTP("f: ");
     DPRINTLN(filename);
     
     return false;
@@ -125,12 +125,14 @@ bool loadconfig(byte count) {
 
       JsonArray& _wifi = jsonBuffer.parseArray(buf.get());
       if (!checkjson(_wifi,WIFI_FILE)) return false;
+
+      wifi.savedlen = 0;
       
       // Wie viele WLAN Schlüssel sind vorhanden
       for (JsonArray::iterator it=_wifi.begin(); it!=_wifi.end(); ++it) {  
-        wifissid[lenwifi] = _wifi[lenwifi]["SSID"].asString();
-        wifipass[lenwifi] = _wifi[lenwifi]["PASS"].asString();  
-        lenwifi++;
+        wifi.savedssid[wifi.savedlen] = _wifi[wifi.savedlen]["SSID"].asString();
+        wifi.savedpass[wifi.savedlen] = _wifi[wifi.savedlen]["PASS"].asString();  
+        wifi.savedlen++;
       }
     }
     break;
@@ -274,6 +276,10 @@ bool loadconfig(byte count) {
       else return false;
       if (json.containsKey("pitsup"))      sys.pitsupply = json["pitsup"];
       //else return false;
+      if (json.containsKey("batfull"))      battery.full = json["batfull"];
+      else return false;
+      if (json.containsKey("batsin"))      battery.sincefull = json["batsin"];
+      else return false;
       
     }
     break;
@@ -368,8 +374,7 @@ bool setconfig(byte count, const char* data[2]) {
       
       size_t size = json.measureLength() + 1;
       if (size > EETHING) {
-        DPRINTPLN("[INFO]\tZu viele BOT Daten!");
-        DPRINTLN("[INFO]\tFailed to save Thingspeak config");
+        IPRINTPLN("f:full");
         return false;
       } else {
         clearEE(EETHING,EETHINGBEGIN);  // Bereich reinigen
@@ -416,8 +421,7 @@ bool setconfig(byte count, const char* data[2]) {
        
       size_t size = json.measureLength() + 1;
       if (size > EEPITMASTER) {
-        DPRINTPLN("[INFO]\tZu viele PITMASTER Daten!");
-        DPRINTPLN("[INFO]\tFailed to save Pitmaster config");
+        IPRINTPLN("f:full");
         return false;
       } else {
         clearEE(EEPITMASTER,EEPITMASTERBEGIN);  // Bereich reinigen
@@ -446,6 +450,8 @@ bool setconfig(byte count, const char* data[2]) {
       json["logsec"] =      log_sector;
       json["god"] =         sys.god;
       json["pitsup"] =      sys.pitsupply;
+      json["batfull"] =     battery.full;
+      json["batsin"] =      battery.sincefull;
     
       size_t size = json.measureLength() + 1;
       clearEE(EESYSTEM,EESYSTEMBEGIN);  // Bereich reinigen
@@ -466,7 +472,6 @@ bool setconfig(byte count, const char* data[2]) {
   
   }
 
-  DPRINTPLN("[INFO]\tSaved!");
   return true;
 }
 
@@ -504,7 +509,7 @@ bool modifyconfig(byte count, const char* data[12]) {
       size_t size = json.measureLength() + 1;
       
       if (size > EEWIFI) {
-        DPRINTPLN("[INFO]\tZu viele WIFI Daten!");
+        IPRINTPLN("f:full");
         return false;
       } else {
         clearEE(EEWIFI,EEWIFIBEGIN);  // Bereich reinigen
@@ -536,8 +541,8 @@ bool modifyconfig(byte count, const char* data[12]) {
 
 void serialNote(const char * data, bool art) {
 
-  if (art) DPRINTP("[INFO]\tLoaded ");
-  else     DPRINTP("[INFO]\tFailed to load ");
+  if (art) {IPRINTP("l: ");}      // Load
+  else     {IPRINTP("f: ");}      // Failed Load
   DPRINTLN(data);
 }
 
@@ -547,11 +552,11 @@ void serialNote(const char * data, bool art) {
 void start_fs() {
   
   if (!SPIFFS.begin()) {
-    DPRINTPLN("[INFO]\tFailed to mount file system");
+    DPRINTPLN("f:FS");
     return;
   }
 
-  DPRINTP("[INFO]\tInitalize SPIFFS at Sector: 0x");
+  IPRINTP("SPIFFS: 0x");
   DPRINT((((uint32_t)&_SPIFFS_start - 0x40200000) / SPI_FLASH_SEC_SIZE), HEX);
   DPRINTP(" (");
   DPRINT(((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start)/1024, DEC);
@@ -561,24 +566,22 @@ void start_fs() {
   String fileName;
   Dir dir = SPIFFS.openDir("/");
   while (dir.next()) {
-    DPRINTP("[INFO]\tFS File: ");
+    IPRINTP("FS: ");
     //fileName = dir.fileName();
     //size_t fileSize = dir.fileSize();
     //DPRINTF("[INFO]\tFS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
     DPRINT(dir.fileName());
     File f = dir.openFile("r");
-    DPRINTP("\tSize: ");
+    DPRINTP("\t: ");
     DPRINTLN(formatBytes(f.size()));
   }
 
   FSInfo fs_info;
   SPIFFS.info(fs_info);
-  DPRINTP("[INFO]\tTotalBytes: ");
+  IPRINTP("Total: ");
   DPRINT(formatBytes(fs_info.totalBytes));
-  DPRINTP("\tUsedBytes: ");
+  DPRINTP("\tUsed: ");
   DPRINTLN(formatBytes(fs_info.usedBytes));
-  //Serial.println(fs_info.blockSize);
-  //Serial.println(fs_info.pageSize);
 
   //u32_t total, used;
   //int res = SPIFFS_info(&fs, &total, &used);
@@ -639,9 +642,9 @@ void write_flash(uint32_t _sector) {
   noInterrupts();
   if(spi_flash_erase_sector(_sector) == SPI_FLASH_RESULT_OK) {  // ESP.flashEraseSector
     spi_flash_write(_sector * SPI_FLASH_SEC_SIZE, (uint32 *) mylog, sizeof(mylog));  //ESP.flashWrite
-    DPRINTP("[LOG]\tSpeicherung im Sector: ");
-    DPRINTLN(_sector, HEX);
-  } else DPRINTPLN("[INFO]\tFehler beim Speichern im Flash");
+    //DPRINTP("[LOG]\tSpeicherung im Sector: ");
+    //DPRINTLN(_sector, HEX);
+  } //else DPRINTPLN("[INFO]\tFehler beim Speichern im Flash");
   interrupts(); 
 }
 

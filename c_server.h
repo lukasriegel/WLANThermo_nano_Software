@@ -55,7 +55,7 @@ void getRequest() {
    aClient->onError(NULL, NULL);
 
    client->onDisconnect([](void * arg, AsyncClient * c){
-    DPRINTPLN("[INFO]\tDisconnect myRequest Client");
+    IPRINTPLN("cd:myRequest");    // Disconnect Client
     //Serial.println(myrequest.response);
     //myrequest.request->send(404);
     myrequest.request->send(200, "text/plain", myrequest.response);
@@ -67,11 +67,11 @@ void getRequest() {
    client->onData([](void * arg, AsyncClient * c, void * data, size_t len){
     String payload((char*)data);
     myrequest.response += payload; 
-    Serial.println("[INFO]\tResponse external Request");
+    IPRINTPLN("Response ex. Request");
    }, NULL);
 
    //send the request
-   DPRINTPLN("[INFO]\tSend external Request:");
+   IPRINTPLN("Send ex. Request:");
    String url;
    if (myrequest.method == "POST") url += F("POST ");
    else  url += F("GET ");
@@ -87,7 +87,7 @@ void getRequest() {
  }, NULL);
 
  if(!aClient->connect(myrequest.host.c_str(), 80)){
-   Serial.println("[INFO]\MyRequest Client Connect Fail");
+   //Serial.println("[INFO]\MyRequest Client Connect Fail");
    AsyncClient * client = aClient;
    aClient = NULL;
    delete client;
@@ -228,8 +228,8 @@ String cloudData() {
 
     system["time"] = String(now());
     system["soc"] = battery.percentage;
-    system["charge"] = !battery.charge;
-    system["rssi"] = rssi;
+    system["charge"] = battery.charge;
+    system["rssi"] = wifi.rssi;
     system["unit"] = temp_unit;
     //system["sn"] = String(ESP.getChipId(), HEX);
 
@@ -324,8 +324,6 @@ void sendDataCloud() {
 void server_setup() {
 
   MDNS.begin(sys.host.c_str());  // siehe Beispiel: WiFi.hostname(host); WiFi.softAP(host);
-  DPRINTP("[INFO]\tOpen http://");
-  DPRINT(sys.host);
     
   server.addHandler(&nanoWebHandler);
   server.addHandler(&bodyWebHandler);
@@ -339,13 +337,29 @@ void server_setup() {
   server.on("/info",[](AsyncWebServerRequest *request){
     FSInfo fs_info;
     SPIFFS.info(fs_info);
+    String ssidstr;
+    for (int i = 0; i < wifi.savedlen; i++) {
+        ssidstr += " ";
+        ssidstr += String(i+1);
+        ssidstr += ": "; 
+        ssidstr += wifi.savedssid[i];
+    }
+    
     request->send(200,"","totalBytes:" +String(fs_info.totalBytes) + "\n"
       +"usedBytes: " + String(fs_info.usedBytes)+ "\n"
       +"heap: "+String(ESP.getFreeHeap()) + "\n"
       +"sn: "+String(ESP.getChipId(), HEX) + "\n"
       +"batmin: "+String(battery.min) + "\n"
       +"batmax: "+String(battery.max) + "\n"
-      +"bat: "+String(battery.voltage));
+      +"batfull: "+String(battery.full) + "\n"
+      +"batstartload: "+String(battery.startload) + "\n"
+      +"battime: "+String(battery.sincefull) + "\n"
+      +"batdrift: "+String(battery.drift) + "\n"
+      +"batsim: "+String(battery.voltage) + "\n"
+      +"batreal: "+String(median_average()) + "\n"
+      +"ssid: " + ssidstr + "\n"
+      +"wifimode: " + String(WiFi.getMode())
+      );
   });
 
   server.on("/god",[](AsyncWebServerRequest *request){
@@ -382,7 +396,7 @@ void server_setup() {
   });
 
   server.on("/restart",[](AsyncWebServerRequest *request){
-    restartnow = true;
+    sys.restartnow = true;
     request->send(200, "text/plain", "Restart");
   });
 
@@ -415,7 +429,7 @@ void server_setup() {
         byte aktor = request->getParam("aktor")->value().toInt();
         int val = request->getParam("val")->value().toInt();
         DC_control(dc, aktor, val);
-        DPRINTP("[INFO]\tDC-Test: ");
+        IPRINTP("DC-Test: ");
         DPRINTLN(val);
         ESP.wdtEnable(10);
         request->send(200, "text/plain", "true");
@@ -439,7 +453,6 @@ void server_setup() {
   server.on("/autotune",[](AsyncWebServerRequest *request) { 
       if(request->hasParam("cycle")&&request->hasParam("over")&&request->hasParam("timelimit")){
         ESP.wdtDisable(); 
-        Serial.println(ESP.getFreeHeap());
         long limit = request->getParam("timelimit")->value().toInt();
         int over = request->getParam("over")->value().toInt();
         int cycle = request->getParam("cycle")->value().toInt();
@@ -458,7 +471,7 @@ void server_setup() {
   });
       
   server.begin();
-  DPRINTPLN("[INFO]\tHTTP server started");
+  IPRINTPLN("HTTP server started");
   MDNS.addService("http", "tcp", 80);
 }
 

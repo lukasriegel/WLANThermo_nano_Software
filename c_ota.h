@@ -106,11 +106,11 @@ void do_http_update() {
     sys.update = 0;
     setconfig(eSYSTEM,{});
     sys.update = -1;   // Neue Suche anstoßen
-    DPRINTPLN("[INFO]\tUPDATE FINISHED");
+    IPRINTPLN("u:finish");    // Update finished
     return;
   }
   
-  if((isAP == 0)) {
+  if((wifi.mode == 1)) {                 // nur bei STA
     if (sys.getupdate != "false") {
 
       // UPDATE Adresse
@@ -127,7 +127,7 @@ void do_http_update() {
         setconfig(eSYSTEM,{});
         question.typ = OTAUPDATE;
         drawQuestion(0);
-        DPRINTPLN("[INFO]\tUPDATE_CANCELED");
+        IPRINTPLN("u:cancel");      // Update canceled
         displayblocked = false;
         sys.updatecount = 0;
         return;
@@ -141,7 +141,7 @@ void do_http_update() {
         sys.update = 2;  // Nächster Updatestatus
         drawUpdate("Webinterface");
         setconfig(eSYSTEM,{});                                      // SPEICHERN
-        DPRINTPLN("[INFO]\tDo SPIFFS Update ...");
+        IPRINTPLN("u:SPIFFS ...");
         ret = ESPhttpUpdate.updateSpiffs(adress + "&getSpiffs=" + sys.getupdate);
 
     
@@ -149,7 +149,8 @@ void do_http_update() {
         sys.update = 3;
         drawUpdate("Firmware");
         setconfig(eSYSTEM,{});                                      // SPEICHERN
-        DPRINTPLN("[INFO]\tDo Firmware Update ...");
+        IPRINTPLN("u:FW ...");
+        Serial.println(adress + "&getFirmware=" + sys.getupdate);
         ret = ESPhttpUpdate.update(adress + "&getFirmware=" + sys.getupdate);
     
       } 
@@ -176,7 +177,7 @@ void do_http_update() {
           break;
       }
     } else {
-      DPRINTPLN("[INFO]\tKein UPDATE vorhanden");
+      IPRINTPLN("u:no");
       sys.update = 0;   // Vorgang beenden
     }
   }
@@ -191,7 +192,7 @@ static AsyncClient * updateClient = NULL;
 void check_http_update() {
 
   if (sys.update < 1) {
-    if((isAP == 0 && sys.autoupdate)) {
+    if((wifi.mode == 1 && sys.autoupdate)) {
 
       if(updateClient) return;                 //client already exists
 
@@ -235,7 +236,7 @@ void check_http_update() {
             string_to_tm(&tmx, date_string);
             setTime(makeTime(tmx));
 
-            DPRINTP("[INFO]\tUTC: ");
+            IPRINTP("UTC: ");
             DPRINTLN(digitalClockDisplay(now()));
             
             // Update
